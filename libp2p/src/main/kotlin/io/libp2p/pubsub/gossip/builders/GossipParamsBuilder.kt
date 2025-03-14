@@ -40,8 +40,6 @@ class GossipParamsBuilder {
 
     private var pruneBackoff: Duration? = null
 
-    private var floodPublish: Boolean? = null
-
     private var gossipFactor: Double? = null
 
     private var opportunisticGraftPeers: Int? = null
@@ -72,6 +70,14 @@ class GossipParamsBuilder {
 
     private var connectCallback: Function2<PeerId, ByteArray, Unit>? = null
 
+    private var maxIDontWantMessageIds: Int? = null
+
+    private var iDontWantMinMessageSizeThreshold: Int? = null
+
+    private var floodPublishMaxMessageSizeThreshold: Int? = null
+
+    private var iDontWantTTL: Duration? = null
+
     init {
         val source = GossipParams()
         this.D = source.D
@@ -84,7 +90,7 @@ class GossipParamsBuilder {
         this.maxPeersSentInPruneMsg = source.maxPeersSentInPruneMsg
         this.maxPeersAcceptedInPruneMsg = source.maxPeersAcceptedInPruneMsg
         this.pruneBackoff = source.pruneBackoff
-        this.floodPublish = source.floodPublish
+        this.floodPublishMaxMessageSizeThreshold = source.floodPublishMaxMessageSizeThreshold
         this.gossipFactor = source.gossipFactor
         this.opportunisticGraftPeers = source.opportunisticGraftPeers
         this.opportunisticGraftTicks = source.opportunisticGraftTicks
@@ -100,6 +106,9 @@ class GossipParamsBuilder {
         this.maxPruneMessages = source.maxPruneMessages
         this.gossipRetransmission = source.gossipRetransmission
         this.connectCallback = source.connectCallback
+        this.maxIDontWantMessageIds = source.maxIDontWantMessageIds
+        this.iDontWantMinMessageSizeThreshold = source.iDontWantMinMessageSizeThreshold
+        this.iDontWantTTL = source.iDontWantTTL
     }
 
     fun D(value: Int): GossipParamsBuilder = apply { D = value }
@@ -131,8 +140,6 @@ class GossipParamsBuilder {
     fun maxPeersAcceptedInPruneMsg(value: Int): GossipParamsBuilder = apply { maxPeersAcceptedInPruneMsg = value }
 
     fun pruneBackoff(value: Duration): GossipParamsBuilder = apply { pruneBackoff = value }
-
-    fun floodPublish(value: Boolean): GossipParamsBuilder = apply { floodPublish = value }
 
     fun gossipFactor(value: Double): GossipParamsBuilder = apply { gossipFactor = value }
 
@@ -172,6 +179,14 @@ class GossipParamsBuilder {
         connectCallback = value
     }
 
+    fun maxIDontWantMessageIds(value: Int): GossipParamsBuilder = apply { maxIDontWantMessageIds = value }
+
+    fun iDontWantMinMessageSizeThreshold(value: Int): GossipParamsBuilder = apply { iDontWantMinMessageSizeThreshold = value }
+
+    fun floodPublishMaxMessageSizeThreshold(value: Int): GossipParamsBuilder = apply { floodPublishMaxMessageSizeThreshold = value }
+
+    fun iDontWantTTL(value: Duration): GossipParamsBuilder = apply { iDontWantTTL = value }
+
     fun build(): GossipParams {
         calculateMissing()
         checkRequiredFields()
@@ -188,7 +203,7 @@ class GossipParamsBuilder {
             gossipHistoryLength = gossipHistoryLength!!,
             heartbeatInterval = heartbeatInterval!!,
             seenTTL = seenTTL!!,
-            floodPublish = floodPublish!!,
+            floodPublishMaxMessageSizeThreshold = floodPublishMaxMessageSizeThreshold!!,
             gossipFactor = gossipFactor!!,
             opportunisticGraftPeers = opportunisticGraftPeers!!,
             opportunisticGraftTicks = opportunisticGraftTicks!!,
@@ -206,7 +221,10 @@ class GossipParamsBuilder {
             pruneBackoff = pruneBackoff!!,
             maxPruneMessages = maxPruneMessages,
             gossipRetransmission = gossipRetransmission!!,
-            connectCallback = connectCallback!!
+            connectCallback = connectCallback!!,
+            maxIDontWantMessageIds = maxIDontWantMessageIds!!,
+            iDontWantMinMessageSizeThreshold = iDontWantMinMessageSizeThreshold!!,
+            iDontWantTTL = iDontWantTTL!!
         )
     }
 
@@ -234,7 +252,7 @@ class GossipParamsBuilder {
         check(seenTTL != null, { "seenTTL must not be null" })
         check(maxPeersSentInPruneMsg != null, { "maxPeersSentInPruneMsg must not be null" })
         check(pruneBackoff != null, { "pruneBackoff must not be null" })
-        check(floodPublish != null, { "floodPublish must not be null" })
+        check(floodPublishMaxMessageSizeThreshold != null, { "floodPublishMaxMessageSizeThreshold must not be null" })
         check(gossipFactor != null, { "gossipFactor must not be null" })
         check(opportunisticGraftPeers != null, { "opportunisticGraftPeers must not be null" })
         check(opportunisticGraftTicks != null, { "opportunisticGraftTicks must not be null" })
@@ -244,5 +262,8 @@ class GossipParamsBuilder {
         check(iWantFollowupTime != null, { "iWantFollowupTime must not be null" })
         check(gossipRetransmission != null, { "gossipRetransmission must not be null" })
         check(connectCallback != null, { "connectCallback must not be null" })
+        check(maxIDontWantMessageIds != null, { "maxIDontWantMessageIds must not be null" })
+        check(iDontWantMinMessageSizeThreshold != null, { "iDontWantMinMessageSizeThreshold must not be null" })
+        check(iDontWantTTL != null, { "iDontWantTTL must not be null" })
     }
 }
