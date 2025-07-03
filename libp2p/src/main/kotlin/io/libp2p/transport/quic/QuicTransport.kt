@@ -189,7 +189,7 @@ class QuicTransport(
             .initialMaxStreamDataBidirectionalLocal(1024)
             .build()
 
-        val connFuture = QuicChannel.newBootstrap(
+        val connFuture = QuicChannelBootstrap(
             client.clone()
                 .handler(handler)
                 .localAddress(0)

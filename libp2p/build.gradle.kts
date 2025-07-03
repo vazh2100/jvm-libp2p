@@ -15,7 +15,11 @@ dependencies {
     implementation("io.netty:netty-handler")
     implementation("io.netty:netty-codec-http")
     implementation("io.netty:netty-transport-classes-epoll")
-    implementation("io.netty.incubator:netty-incubator-codec-native-quic")
+    // fixes QuicChannelBootstrap language problem for Android API <= 23
+    implementation("com.github.vazh2100:netty-incubator-codec-classes-quic:94e43f2732")
+    implementation("io.netty.incubator:netty-incubator-codec-native-quic"){
+        exclude("io.netty.incubator", module = "netty-incubator-codec-classes-quic")
+    }
 
     api("com.google.protobuf:protobuf-java")
 
