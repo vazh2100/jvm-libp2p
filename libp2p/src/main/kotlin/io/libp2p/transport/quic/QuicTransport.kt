@@ -79,7 +79,7 @@ class QuicTransport(
             return QuicTransport(k, "ECDSA", p)
         }
 
-        private fun createStream(channel: Channel, connection: Connection, initiator: Boolean): Stream {
+        fun createStream(channel: Channel, connection: Connection, initiator: Boolean): Stream {
             val stream = StreamOverNetty(channel, connection, initiator)
             channel.attr(STREAM).set(stream)
             return stream
@@ -333,14 +333,7 @@ class QuicTransport(
             .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)
             .sslTaskExecutor(workerGroup)
             .tokenHandler(NoTokenHandler())
-            .handler(object : ChannelInitializer<Channel>() {
-                override fun initChannel(ch: Channel) {
-                    val connection = ConnectionOverNetty(ch, this@QuicTransport, false)
-                    ch.attr(CONNECTION).set(connection)
-                    preHandler?.also { it.visit(connection) }
-                    connHandler.handleConnection(connection)
-                }
-            })
+            .handler(QuicChannelServerHandler(this, localKey, connHandler, preHandler))
             .initialMaxData(1024)
             .initialMaxStreamsBidirectional(16)
             .initialMaxStreamDataBidirectionalRemote(1024)
