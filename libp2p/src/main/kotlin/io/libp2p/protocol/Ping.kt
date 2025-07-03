@@ -84,7 +84,6 @@ open class PingProtocol(var pingSize: Int) : ProtocolHandler<PingController>(Lon
                 closed = true
                 requests.values.forEach { it.second.completeExceptionally(ConnectionClosedException()) }
                 requests.clear()
-                timeoutScheduler.shutdownNow()
             }
             activeFuture.completeExceptionally(ConnectionClosedException())
         }
