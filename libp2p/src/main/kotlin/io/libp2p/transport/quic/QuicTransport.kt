@@ -177,6 +177,7 @@ class QuicTransport(
     override fun dial(addr: Multiaddr, connHandler: ConnectionHandler, preHandler: ChannelVisitor<P2PChannel>?): CompletableFuture<Connection> {
         if (closed) throw Libp2pException("Transport is closed")
 
+        println("dial")
         val trust = Libp2pTrustManager(Optional.ofNullable(addr.getPeerId()))
         val sslContext = quicSslContext(addr.getPeerId(), trust)
         val handler = QuicClientCodecBuilder()
@@ -204,9 +205,10 @@ class QuicTransport(
 //            .handler(connHandler)
             .streamHandler(object : ChannelInboundHandlerAdapter() {
                 override fun handlerAdded(ctx: ChannelHandlerContext?) {
+                    println("handlerAdded")
                     val connection = ctx!!.channel().parent().attr(CONNECTION).get() as Connection
                     preHandler?.also { it.visit(connection) }
-                    connHandler.handleConnection(connection)
+                    println(connection)
                 }
             })
             .connect()
