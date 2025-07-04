@@ -65,11 +65,15 @@ class NetworkImpl(
      * Connects to a peerid with a provided set of {@code Multiaddr}, returning the existing connection if already connected.
      */
     override fun connect(id: PeerId, preHandler: ChannelVisitor<P2PChannel>?, vararg addrs: Multiaddr): CompletableFuture<Connection> {
+        println("Connect was triggered")
         // we already have a connection for this peer, short circuit.
         connections.find { it.secureSession().remoteId == id }
             ?.apply { return CompletableFuture.completedFuture(this) }
 
         val addrsWithP2P = addrs.map { it.withP2P(id) }
+
+        println("addrsWithP2P")
+        println(addrsWithP2P)
 
         // 1. check that some transport can dial at least one addr.
         // 2. trigger dials in parallel via all transports.
