@@ -201,14 +201,7 @@ class QuicTransport(
             .option(ChannelOption.AUTO_READ, true)
             .option(ChannelOption.ALLOCATOR, allocator)
             .remoteAddress(fromMultiaddr(addr))
-//            .handler(connHandler)
-            .streamHandler(object : ChannelInboundHandlerAdapter() {
-                override fun handlerAdded(ctx: ChannelHandlerContext?) {
-                    val connection = ctx!!.channel().parent().attr(CONNECTION).get() as Connection
-                    preHandler?.also { it.visit(connection) }
-                    connHandler.handleConnection(connection)
-                }
-            })
+            .streamHandler(InboundStreamHandler(incomingMultistreamProtocol, protocols))
             .connect()
 
         val res = CompletableFuture<Connection>()
