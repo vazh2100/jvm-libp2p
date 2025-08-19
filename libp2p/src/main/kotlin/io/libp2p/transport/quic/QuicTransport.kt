@@ -189,6 +189,7 @@ class QuicTransport(
             .initialMaxStreamDataBidirectionalLocal(1024)
             .build()
 
+        @Suppress("Deprecation")
         val connFuture = QuicChannelBootstrap(
             client.clone()
                 .handler(handler)

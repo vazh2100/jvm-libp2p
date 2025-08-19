@@ -46,6 +46,7 @@ dependencyManagement {
             entry 'bcpkix-jdk18on'
             entry 'bctls-jdk18on'
         }
-        dependency "io.netty.incubator:netty-incubator-codec-native-quic:0.0.71.Final"
+        // 0.0.74.Final fixes QuicChannelBootstrap language problem for Android API <= 23
+        dependency "io.netty.incubator:netty-incubator-codec-native-quic:0.0.74.Final"
     }
 }
