@@ -189,15 +189,16 @@ class QuicTransport(
             .initialMaxStreamDataBidirectionalLocal(1024)
             .build()
 
+
+        val channel =  client.clone()
+            .handler(handler)
+            .localAddress(0)
+            .bind()
+            .sync()
+            .channel()
+
         @Suppress("Deprecation")
-        val connFuture = QuicChannelBootstrap(
-            client.clone()
-                .handler(handler)
-                .localAddress(0)
-                .bind()
-                .sync()
-                .channel()
-        )
+        val connFuture = QuicChannelBootstrap(channel)
             .streamOption(ChannelOption.ALLOCATOR, allocator)
             .option(ChannelOption.AUTO_READ, true)
             .option(ChannelOption.ALLOCATOR, allocator)
@@ -205,51 +206,58 @@ class QuicTransport(
             .streamHandler(InboundStreamHandler(incomingMultistreamProtocol, protocols))
             .connect()
 
-        val res = CompletableFuture<Connection>()
-        connFuture.also {
-            registerChannel(it.get())
-            val connection = ConnectionOverNetty(it.get(), this, true)
-            connection.setMuxerSession(object : StreamMuxer.Session {
-                override fun <T> createStream(protocols: List<ProtocolBinding<T>>): StreamPromise<T> {
-                    var multistreamProtocol: MultistreamProtocol = MultistreamProtocolV1
-                    var streamMultistreamProtocol: MultistreamProtocol by lazyVar { multistreamProtocol }
-                    val multi = streamMultistreamProtocol.createMultistream(protocols)
+        val result = CompletableFuture<Connection>()
 
-                    val controller = CompletableFuture<T>()
-                    val streamFut = CompletableFuture<Stream>()
-                    it.get().createStream(
-                        QuicStreamType.BIDIRECTIONAL,
-                        object : ChannelInboundHandlerAdapter() {
-                            override fun handlerAdded(ctx: ChannelHandlerContext?) {
-                                val stream = createStream(ctx!!.channel(), connection, true)
-                                ctx.channel().attr(STREAM).set(stream)
-                                val streamHandler = multi.toStreamHandler()
-                                streamHandler.handleStream(stream).forward(controller).apply { streamFut.complete(stream) }
-                            }
-                        }
-                    )
-                    return StreamPromise(streamFut, controller)
-                }
-            })
-            val pubHash = Multihash.of(addr.getPeerId()!!.bytes.toByteBuf())
-            val remotePubKey = if (pubHash.desc.digest == Multihash.Digest.Identity) {
-                unmarshalPublicKey(pubHash.bytes.toByteArray())
-            } else {
-                getPublicKeyFromCert(arrayOf(trust.remoteCert!!))
-            }
-            connection.setSecureSession(
-                SecureChannel.Session(
-                    PeerId.fromPubKey(localKey.publicKey()),
-                    addr.getPeerId()!!,
-                    remotePubKey,
-                    null
-                )
-            )
-            preHandler?.also { it.visit(connection) }
-            connHandler.handleConnection(connection)
-            res.complete(connection)
+        val quicChannel = try {
+            connFuture.get()
+        } catch (e: Exception) {
+            channel.close()
+            result.completeExceptionally(e)
+            return result
         }
-        return res
+
+        registerChannel(quicChannel)
+        val connection = ConnectionOverNetty(quicChannel, this, true)
+        connection.setMuxerSession(object : StreamMuxer.Session {
+            override fun <T> createStream(protocols: List<ProtocolBinding<T>>): StreamPromise<T> {
+                var multistreamProtocol: MultistreamProtocol = MultistreamProtocolV1
+                var streamMultistreamProtocol: MultistreamProtocol by lazyVar { multistreamProtocol }
+                val multi = streamMultistreamProtocol.createMultistream(protocols)
+                val controller = CompletableFuture<T>()
+                val streamFut = CompletableFuture<Stream>()
+                quicChannel.createStream(
+                    QuicStreamType.BIDIRECTIONAL,
+                    object : ChannelInboundHandlerAdapter() {
+                        override fun handlerAdded(ctx: ChannelHandlerContext?) {
+                            val stream = createStream(ctx!!.channel(), connection, true)
+                            ctx.channel().attr(STREAM).set(stream)
+                            val streamHandler = multi.toStreamHandler()
+                            streamHandler.handleStream(stream).forward(controller).apply { streamFut.complete(stream) }
+                        }
+                    }
+                )
+                return StreamPromise(streamFut, controller)
+            }
+        })
+        val pubHash = Multihash.of(addr.getPeerId()!!.bytes.toByteBuf())
+        val remotePubKey = if (pubHash.desc.digest == Multihash.Digest.Identity) {
+            unmarshalPublicKey(pubHash.bytes.toByteArray())
+        } else {
+            getPublicKeyFromCert(arrayOf(trust.remoteCert!!))
+        }
+        connection.setSecureSession(
+            SecureChannel.Session(
+                PeerId.fromPubKey(localKey.publicKey()),
+                addr.getPeerId()!!,
+                remotePubKey,
+                null
+            )
+        )
+        preHandler?.also { it.visit(connection) }
+        connHandler.handleConnection(connection)
+        result.complete(connection)
+
+        return result
     }
 
     private fun registerChannel(ch: Channel) {
